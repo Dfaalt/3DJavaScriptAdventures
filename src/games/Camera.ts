@@ -10,11 +10,24 @@ export const updateCamera = (
   const camera = cameraRef.current;
   const player = playerRef.current;
 
-  const cameraOffset = new THREE.Vector3(0, 3, 8);
+  // 🎮 OFFSET GAYA GAME AAA:
+  // x : agak ke kanan sedikit (kamera bahu kanan)
+  // y : agak di atas kepala
+  // z : belakang player, tapi lebih dekat (4 bukannya 8)
+  const cameraOffset = new THREE.Vector3(1.2, 2.2, 4);
+
+  // putar offset sesuai rotasi player (biar selalu di belakang)
   cameraOffset.applyEuler(new THREE.Euler(0, player.rotation.y, 0));
 
+  // posisi target kamera
   const targetPosition = player.position.clone().add(cameraOffset);
 
-  camera.position.lerp(targetPosition, 0.1);
-  camera.lookAt(player.position);
+  // lerp biar smooth tapi responsif (0.18 lebih “lengket” ke player)
+  camera.position.lerp(targetPosition, 0.18);
+
+  // kamera lihat sedikit di atas badan player (bukan kaki)
+  const lookAtTarget = player.position.clone();
+  lookAtTarget.y += 1.5; // kira-kira dada/kepala
+
+  camera.lookAt(lookAtTarget);
 };

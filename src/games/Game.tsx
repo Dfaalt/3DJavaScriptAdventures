@@ -14,7 +14,12 @@ import rangerThalenAvatar from "@/assets/avatars/ranger-thalen.png";
 import chronoWardenAvatar from "@/assets/avatars/chrono-warden.png";
 import oracleAvatar from "@/assets/avatars/oracle.png";
 
-import { createPlayerMesh, updatePlayer } from "./Player";
+import {
+  createPlayerMesh,
+  updatePlayer,
+  updatePlayerAnimation,
+} from "./Player";
+
 import { updateCamera } from "./Camera";
 import { loadLevel } from "./World";
 import {
@@ -31,7 +36,7 @@ const getNPCAvatar = (name: string): string => {
     "Sage Marrelin": sageMarelinAvatar,
     "Ranger Thalen": rangerThalenAvatar,
     "Chrono-Warden": chronoWardenAvatar,
-    "Oracle": oracleAvatar,
+    Oracle: oracleAvatar,
   };
   return avatarMap[name] || "";
 };
@@ -58,6 +63,7 @@ export const Game = () => {
   const portalRef = useRef<THREE.Mesh | null>(null);
   const playerLightRef = useRef<THREE.PointLight | null>(null);
   const animationIdRef = useRef<number>();
+  const clockRef = useRef<THREE.Clock | null>(null);
   const collidablesRef = useRef<THREE.Object3D[]>([]);
 
   const [gameState, setGameState] = useState<GameState>({
@@ -95,6 +101,7 @@ export const Game = () => {
 
   useEffect(() => {
     if (!containerRef.current) return;
+    clockRef.current = new THREE.Clock();
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
@@ -166,6 +173,17 @@ export const Game = () => {
       const state = gameStateRef.current;
       animationIdRef.current = requestAnimationFrame(animate);
 
+      const clock = clockRef.current;
+      const delta = clock ? clock.getDelta() : 0.016;
+
+      // cek input gerak
+      const keys = keysPressed.current;
+      const isMovingInput = keys["w"] || keys["a"] || keys["s"] || keys["d"];
+
+      const isMoving =
+        !state.showDialog && !state.showEditor && !!isMovingInput;
+
+      // update posisi player kalau tidak sedang dialog/editor
       if (!state.showDialog && !state.showEditor) {
         updatePlayer({
           playerRef,
@@ -176,6 +194,9 @@ export const Game = () => {
           isGrounded,
         });
       }
+
+      // 🔥 update animasi setiap frame
+      updatePlayerAnimation(delta, isMoving);
 
       updateCamera(cameraRef, playerRef);
 
@@ -200,6 +221,7 @@ export const Game = () => {
 
       renderer.render(scene, camera);
     };
+
     animate();
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -386,9 +408,7 @@ export const Game = () => {
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
-      {!gameStarted && (
-        <GameStartScreen onStart={() => setGameStarted(true)} />
-      )}
+      {!gameStarted && <GameStartScreen onStart={() => setGameStarted(true)} />}
 
       <div ref={containerRef} className="w-full h-full" />
 
